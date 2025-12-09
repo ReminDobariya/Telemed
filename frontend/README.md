@@ -15,7 +15,6 @@ The frontend is a Next.js 14 app (App Router) written in TypeScript. It provides
    - Optionally set `NEXT_PUBLIC_API_URLS` for dev tunnels or multiple backends.
 
 ## Install
-- Using pnpm: `pnpm install`
 - Using npm: `npm install`
 
 ## Run (Development)
@@ -23,15 +22,12 @@ The frontend is a Next.js 14 app (App Router) written in TypeScript. It provides
 - npm: `npm run dev`
 - Default dev server: `http://localhost:3000`
 
-## Build and Start (Production)
-- Build: `pnpm build` or `npm run build`
-- Start: `pnpm start` or `npm start`
+
 
 ## Scripts
 - `dev`: run the development server
 - `build`: compile production build
 - `start`: run the production server
-- `lint`: Next.js lint (optional)
 
 ## Troubleshooting
 - If the app cannot reach the backend, verify `CORS_ORIGIN` on the backend includes the frontend URL.

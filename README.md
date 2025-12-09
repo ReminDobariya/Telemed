@@ -38,18 +38,10 @@ If your local libraries don’t match required versions, create a virtual enviro
    - `pip install --upgrade pip`
    - Example (adjust to your needs):
      - `pip install tensorflow keras flask numpy pillow`
-3. Pin versions and record:
-   - `pip freeze > requirements.txt`
-4. If the `.h5` model is >100MB, use Git LFS:
-   - `git lfs install`
-   - `git lfs track "*.h5"`
-   - Commit `.gitattributes` and push.
 
 ## Deployment Notes
 - Ensure backend `CORS_ORIGIN` lists your frontend URLs (localhost and tunnels).
 - Configure environment variables for both apps in production.
 - Secure secrets (`JWT_SECRET`, API keys) and database access.
 
-## License
-MIT (or your chosen license).
 

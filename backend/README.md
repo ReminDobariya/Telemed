@@ -27,9 +27,6 @@ The backend is an Express API that powers Telemed features: authentication, chat
 - Development: `npm run dev` (nodemon)
 - Production: `npm start`
 
-## Testing
-- `npm test` (jest + supertest)
-
 ## API Notes
 - Update `CORS_ORIGIN` whenever the frontend URL changes (local, dev tunnel, or production).
 - MongoDB connection uses `MONGO_URI` and `MONGO_DB`; ensure the DB is reachable.
