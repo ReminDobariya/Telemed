@@ -3,6 +3,7 @@
 
 # Allow these root files and directories
 !.gitignore
+!/README.md
 !/app.py
 !/skin_disease_model.h5
 !/frontend/
