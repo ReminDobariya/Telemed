@@ -97,10 +97,14 @@ export default function PatientConsultationPage() {
     return () => { ignore = true }
   }, [params.id, router, toast])
 
-  // Check if doctor has started consultation (for now, check if status is accepted/scheduled)
   useEffect(() => {
     if (appointment) {
-      const canStart = appointment.status === 'accepted' || appointment.status === 'scheduled'
+      const scheduled = new Date(appointment.time)
+      const now = new Date()
+      const windowStart = new Date(scheduled.getTime() - 10 * 60 * 1000)
+      const sameDay = now.toDateString() === scheduled.toDateString()
+      const byStatus = appointment.status === 'accepted' || appointment.status === 'scheduled'
+      const canStart = byStatus && sameDay && now >= windowStart
       setConsultationStarted(canStart)
     }
   }, [appointment])
@@ -127,15 +131,20 @@ export default function PatientConsultationPage() {
   }
 
   const isVirtual = appointment.mode === 'virtual'
-  const canJoin = appointment.status === 'accepted' || appointment.status === 'scheduled'
+  const scheduled = new Date(appointment.time)
+  const now = new Date()
+  const windowStart = new Date(scheduled.getTime() - 10 * 60 * 1000)
+  const sameDay = now.toDateString() === scheduled.toDateString()
+  const canJoinByStatus = appointment.status === 'accepted' || appointment.status === 'scheduled'
+  const canJoin = canJoinByStatus && sameDay && now >= windowStart
 
-  if (!canJoin) {
+  if (!canJoinByStatus) {
     return (
       <div className="container max-w-4xl mx-auto p-4 sm:p-6">
         <Card>
           <CardContent className="p-6 text-center">
             <p className="text-muted-foreground mb-4">
-              This appointment is not yet accepted by the doctor.
+              {appointment.status === 'rejected' ? 'This appointment has been rejected.' : 'This appointment is not yet accepted by the doctor.'}
             </p>
             <Link href="/appointments">
               <Button variant="outline">Back to Appointments</Button>
@@ -229,10 +238,10 @@ export default function PatientConsultationPage() {
                 <Card>
                   <CardContent className="p-6 sm:p-8 text-center">
                     <p className="text-muted-foreground mb-4">
-                      Waiting for doctor to start the consultation...
+                      You can join on {scheduled.toLocaleDateString()} at {scheduled.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      You will be able to join the video call once the doctor starts the consultation.
+                      Please wait until 10 minutes before the scheduled time.
                     </p>
                   </CardContent>
                 </Card>

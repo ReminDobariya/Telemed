@@ -14,10 +14,10 @@ const AppointmentSchema = new mongoose.Schema({
   mode: { type: String, enum: ['virtual', 'in-person'], default: 'virtual' },
   notes: { type: String }, // Doctor's consultation notes
   prescriptionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Prescription' },
+  reminderSent: { type: Boolean, default: false },
 }, { timestamps: true });
 
 module.exports = mongoose.models.Appointment || mongoose.model('Appointment', AppointmentSchema);
-
 
 
 

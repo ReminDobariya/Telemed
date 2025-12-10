@@ -62,6 +62,8 @@ router.post('/message', [
 ], validateRequest, async (req, res) => {
   try {
     let { message, conversationId, userId = 'anonymous', languageCode = 'en' } = req.body;
+    const isValidUserId = userId && mongoose.Types.ObjectId.isValid(userId);
+    userId = isValidUserId ? userId : undefined;
 
     // Validate message for medical appropriateness
     const geminiService = geminiServiceModule.getInstance();
@@ -89,7 +91,11 @@ router.post('/message', [
     
     // If no conversationId, create a persistent conversation in Mongo first
     if (!conversationId) {
-      const created = await Conversation.create({ userId: userId, messages: [] });
+      const doc = { messages: [] };
+      if (userId) {
+        doc.userId = userId;
+      }
+      const created = await Conversation.create(doc);
       conversationId = created._id.toString();
     }
 
@@ -110,14 +116,13 @@ router.post('/message', [
       const conv = await Conversation.findById(conversationId);
       const isFirstMessage = !conv || !conv.messages || conv.messages.length === 0;
       
-      await Conversation.findByIdAndUpdate(
-        conversationId,
-        { 
-          $set: { userId: userId },
-          $push: { messages: { role: 'user', content: message, timestamp: new Date() } }
-        },
-        { upsert: true }
-      );
+      const update = { 
+        $push: { messages: { role: 'user', content: message, timestamp: new Date() } }
+      };
+      if (userId) {
+        update.$set = { userId };
+      }
+      await Conversation.findByIdAndUpdate(conversationId, update, { upsert: true });
       
       // Auto-generate title from first message if no title exists
       if (isFirstMessage) {
@@ -197,6 +202,8 @@ router.post('/upload-image', upload.single('image'), [
     }
 
     let { message, conversationId, userId = 'anonymous', languageCode = 'en' } = req.body;
+    const isValidUserId = userId && mongoose.Types.ObjectId.isValid(userId);
+    userId = isValidUserId ? userId : undefined;
     const imageBuffer = req.file.buffer;
 
     // Validate message for medical appropriateness
@@ -214,7 +221,11 @@ router.post('/upload-image', upload.single('image'), [
     
     // Ensure we have a persistent Mongo conversation id
     if (!conversationId) {
-      const created = await Conversation.create({ userId: userId, messages: [] });
+      const doc = { messages: [] };
+      if (userId) {
+        doc.userId = userId;
+      }
+      const created = await Conversation.create(doc);
       conversationId = created._id.toString();
     }
 
@@ -238,14 +249,13 @@ router.post('/upload-image', upload.single('image'), [
       const conv = await Conversation.findById(conversationId);
       const isFirstMessage = !conv || !conv.messages || conv.messages.length === 0;
       
-      await Conversation.findByIdAndUpdate(
-        conversationId,
-        { 
-          $set: { userId: userId },
-          $push: { messages: { role: 'user', content: message, timestamp: new Date(), metadata: { hasImage: true } } }
-        },
-        { upsert: true }
-      );
+      const update = {
+        $push: { messages: { role: 'user', content: message, timestamp: new Date(), metadata: { hasImage: true } } }
+      };
+      if (userId) {
+        update.$set = { userId };
+      }
+      await Conversation.findByIdAndUpdate(conversationId, update, { upsert: true });
       
       // Auto-generate title from first message if no title exists
       if (isFirstMessage) {

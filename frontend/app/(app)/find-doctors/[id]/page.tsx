@@ -27,10 +27,9 @@ export default function DoctorProfilePage({ params }: { params: { id: string } }
           setDoctor(res.doctor)
         }
       } catch (error) {
-        console.error('Failed to load doctor:', error)
         if (!ignore) {
           toast({ title: "Error", description: "Doctor not found", variant: "destructive" })
-          router.push('/doctors')
+          router.push('/find-doctors')
         }
       } finally {
         if (!ignore) setLoading(false)
@@ -50,7 +49,6 @@ export default function DoctorProfilePage({ params }: { params: { id: string } }
         mode: 'virtual'
       })
       setOpenBook(false)
-      // BookingDialog already shows a success toast, so we just navigate
       setTimeout(() => router.push('/appointments'), 500)
     } catch (error: any) {
       toast({ title: "Error", description: error.message || "Failed to book appointment", variant: "destructive" })
@@ -66,7 +64,6 @@ export default function DoctorProfilePage({ params }: { params: { id: string } }
   }
 
   const doctorForBooking = { id: doctor._id, name: doctor.name, specialty: doctor.specialization }
-
   const modes = doctor.mode === 'both' ? ['virtual', 'in-person'] : (doctor.mode ? [doctor.mode] : ['virtual'])
   const languages = doctor.languages && Array.isArray(doctor.languages) ? doctor.languages : ['English']
 
@@ -78,7 +75,7 @@ export default function DoctorProfilePage({ params }: { params: { id: string } }
           <p className="text-sm text-muted-foreground">{doctor.specialization || "General Practitioner"}</p>
         </div>
         <div className="flex items-center gap-2">
-          <Link href="/doctors">
+          <Link href="/find-doctors">
             <Button variant="outline">Back to directory</Button>
           </Link>
           <Button onClick={() => setOpenBook(true)}>Book Appointment</Button>
@@ -89,7 +86,7 @@ export default function DoctorProfilePage({ params }: { params: { id: string } }
         <div className="md:col-span-2 space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">About</CardTitle>
+              <CardTitle className="text/base">About</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-3">
               {doctor.bio ? (

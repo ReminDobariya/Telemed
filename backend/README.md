@@ -31,6 +31,11 @@ The backend is an Express API that powers Telemed features: authentication, chat
 - Update `CORS_ORIGIN` whenever the frontend URL changes (local, dev tunnel, or production).
 - MongoDB connection uses `MONGO_URI` and `MONGO_DB`; ensure the DB is reachable.
 
+## Appointment Reminders
+- A lightweight in‑process scheduler runs every minute and sends `appointment_reminder` notifications 10 minutes before `accepted`/`scheduled` appointments.
+- Uses the `reminderSent` flag on `Appointment` to avoid duplicate reminders.
+- Ensure your frontend polls notifications to surface reminders to users.
+
 ## Troubleshooting
 - If requests from the frontend are blocked, confirm CORS settings match the frontend origin.
 - For 5xx errors, check logs and ensure environment variables are set correctly.

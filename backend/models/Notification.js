@@ -10,6 +10,7 @@ const NotificationSchema = new mongoose.Schema({
       'appointment_accepted',
       'appointment_rejected',
       'appointment_rescheduled',
+      'appointment_reminder',
       'prescription_uploaded',
       'report_uploaded',
       'message'

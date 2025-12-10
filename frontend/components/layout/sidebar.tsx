@@ -12,7 +12,7 @@ const items = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/chat", label: "AI Assistant", icon: MessageSquare },
   { href: "/appointments", label: "Appointments", icon: CalendarDays },
-  { href: "/doctors", label: "Find Doctors", icon: UserRound },
+  { href: "/find-doctors", label: "Find Doctors", icon: UserRound },
   { href: "/profile", label: "Profile", icon: UserRound },
   { href: "/prescriptions", label: "Prescriptions", icon: Pill },
   { href: "/reports", label: "Health Reports", icon: BarChart3 },

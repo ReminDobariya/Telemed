@@ -165,4 +165,50 @@ httpServer.listen(PORT, () => {
   console.log(`📹 WebSocket: ws://localhost:${PORT}/ws/consultation/:appointmentId`);
 });
 
+// Simple appointment reminder scheduler (runs in-process)
+try {
+  const Appointment = require('./models/Appointment');
+  const Notification = require('./models/Notification');
+  const REMINDER_WINDOW_MINUTES = 10;
+
+  async function checkAndSendReminders() {
+    const now = new Date();
+    const windowStart = new Date(now.getTime() + (REMINDER_WINDOW_MINUTES - 1) * 60 * 1000);
+    const windowEnd = new Date(now.getTime() + (REMINDER_WINDOW_MINUTES + 1) * 60 * 1000);
+
+    try {
+      const upcoming = await Appointment.find({
+        status: { $in: ['accepted', 'scheduled'] },
+        time: { $gte: windowStart, $lte: windowEnd },
+        reminderSent: { $ne: true },
+      }).limit(100);
+
+      for (const appt of upcoming) {
+        try {
+          await Notification.create({
+            userId: appt.userId,
+            type: 'appointment_reminder',
+            title: 'Upcoming Appointment',
+            message: `Your appointment is at ${new Date(appt.time).toLocaleString()}. You can join 10 minutes before.`,
+            appointmentId: appt._id,
+          });
+          appt.reminderSent = true;
+          await appt.save();
+          console.log(`🔔 Reminder sent for appointment ${appt._id}`);
+        } catch (err) {
+          console.error('Failed to send reminder:', err);
+        }
+      }
+    } catch (err) {
+      console.error('Reminder scheduler error:', err);
+    }
+  }
+
+  // Run every minute
+  setInterval(checkAndSendReminders, 60 * 1000);
+  console.log('🕒 Appointment reminder scheduler started');
+} catch (err) {
+  console.error('Failed to start reminder scheduler:', err);
+}
+
 module.exports = app;

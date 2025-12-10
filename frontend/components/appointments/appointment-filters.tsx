@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 type FilterState = {
-  status: "all" | "upcoming" | "completed" | "cancelled"
+  status: "all" | "pending" | "accepted" | "rejected" | "completed" | "cancelled"
 }
 
 export function AppointmentFilters({
@@ -17,7 +17,7 @@ export function AppointmentFilters({
   onChange: (next: FilterState) => void
   onClear: () => void
 }) {
-  const options = useMemo(() => ["all", "upcoming", "completed", "cancelled"] as const, [])
+  const options = useMemo(() => ["all", "pending", "accepted", "rejected", "completed", "cancelled"] as const, [])
   return (
     <div className="flex w-full flex-wrap items-center gap-2">
       <div className="flex items-center gap-2">

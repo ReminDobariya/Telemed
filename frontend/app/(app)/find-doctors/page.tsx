@@ -6,7 +6,7 @@ import { DoctorCard } from "@/components/doctors/doctor-card"
 import { DoctorFilters, type DoctorFilter } from "@/components/doctors/doctor-filters"
 import { DoctorsAPI } from "@/lib/api"
 
-export default function DoctorsPage() {
+export default function FindDoctorsPage() {
   const router = useRouter()
   const [doctors, setDoctors] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -23,9 +23,9 @@ export default function DoctorsPage() {
             specialty: d.specialization,
             photo: d.photo,
             experience: d.experience,
-            experienceYears: d.experience || 0, // For DoctorCard component
+            experienceYears: d.experience || 0,
             fees: d.fees,
-            rating: 4.5, // Default rating since backend doesn't have it yet
+            rating: 4.5,
             modes: d.mode === 'both' ? ['virtual', 'in-person'] : (d.mode ? [d.mode] : ['virtual']),
             languages: d.languages && Array.isArray(d.languages) ? d.languages : ['English'],
             bio: d.bio,
@@ -55,8 +55,7 @@ export default function DoctorsPage() {
   const filtered = useMemo(() => {
     const q = filter.q.trim().toLowerCase()
     return doctors.filter((d) => {
-      const byQuery =
-        !q || d.name.toLowerCase().includes(q) || (d.specialty ? d.specialty.toLowerCase().includes(q) : false)
+      const byQuery = !q || d.name.toLowerCase().includes(q) || (d.specialty ? d.specialty.toLowerCase().includes(q) : false)
       const bySpec = filter.specialty === "all" || (d.specialty && d.specialty === filter.specialty)
       const byMode = filter.mode === "all" || d.modes.includes(filter.mode)
       return byQuery && bySpec && byMode
@@ -84,7 +83,7 @@ export default function DoctorsPage() {
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {filtered.map((doc) => (
-          <DoctorCard key={doc.id} doctor={doc} onBook={(id) => router.push(`/doctors/${id}`)} />
+          <DoctorCard key={doc.id} doctor={doc} onBook={(id) => router.push(`/find-doctors/${id}`)} />
         ))}
         {filtered.length === 0 ? (
           <p className="col-span-full text-sm text-muted-foreground">No doctors match your filters.</p>

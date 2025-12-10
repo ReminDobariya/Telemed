@@ -6,17 +6,17 @@ import { AppointmentList } from "@/components/appointments/appointment-list"
 import { BookingDialog, type BookingData } from "@/components/appointments/booking-dialog"
 import { AppointmentsAPI, DoctorsAPI } from "@/lib/api"
 
-// Local view model matching AppointmentCard expectations
 type ViewAppointment = {
   id: string
   doctorName: string
   specialty?: string
-  date: string // yyyy-mm-dd
-  time: string // display time
-  status: "upcoming" | "completed" | "cancelled"
+  date: string
+  time: string
+  status: "pending" | "accepted" | "rejected" | "completed" | "cancelled"
   mode?: "in-person" | "virtual"
   location?: string
   notes?: string
+  scheduledAt: string
 }
 
 // Convert 24h "HH:MM" → "h:mm AM/PM"
@@ -27,6 +27,17 @@ function toAmPm(hhmm: string) {
   const ampm = h >= 12 ? "PM" : "AM"
   h = h % 12 || 12
   return `${h}:${m} ${ampm}`
+}
+
+function to24h(input: string) {
+  const m = input.trim().match(/^([0-9]{1,2}):([0-9]{2})\s*(AM|PM)$/i)
+  if (m) {
+    let h = Number(m[1]) % 12
+    if (m[3].toUpperCase() === 'PM') h += 12
+    const hh = h.toString().padStart(2, '0')
+    return `${hh}:${m[2]}`
+  }
+  return input
 }
 
 // Map dummy Appointment → ViewAppointment used by UI components
@@ -40,7 +51,12 @@ function mapDummyToView(a: {
   type: "online" | "in-person"
   symptoms?: string
 }): ViewAppointment {
-  const status: ViewAppointment["status"] = a.status === "completed" || a.status === "cancelled" ? a.status : "upcoming"
+  const status: ViewAppointment["status"] =
+    a.status === "completed" || a.status === "cancelled"
+      ? a.status
+      : a.status === "pending"
+        ? "pending"
+        : "accepted"
   const mode: ViewAppointment["mode"] = a.type === "online" ? "virtual" : "in-person"
   const location = mode === "in-person" ? "Clinic" : "Video Visit"
   // Preserve AM/PM times from dummy; convert if 24h format
@@ -55,6 +71,7 @@ function mapDummyToView(a: {
     mode,
     location,
     notes: a.symptoms,
+    scheduledAt: new Date(`${a.date}T${to24h(a.time)}:00`).toISOString(),
   }
 }
 
@@ -69,7 +86,7 @@ function slugId(input: string) {
 
 export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState<ViewAppointment[]>([])
-  const [filter, setFilter] = useState<{ status: "all" | "upcoming" | "completed" | "cancelled" }>({ status: "all" })
+  const [filter, setFilter] = useState<{ status: "all" | "pending" | "accepted" | "rejected" | "completed" | "cancelled" }>({ status: "all" })
 
   const [doctors, setDoctors] = useState<Doctor[]>([])
 
@@ -105,11 +122,11 @@ export default function AppointmentsPage() {
           specialty: '',
           date: new Date(a.time).toISOString().slice(0,10),
           time: new Date(a.time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
-          status: a.status === 'completed' || a.status === 'cancelled' ? a.status : 
-                  (a.status === 'accepted' || a.status === 'scheduled' ? 'upcoming' : 'upcoming'),
+          status: a.status === 'scheduled' ? 'accepted' : a.status,
           mode: a.mode === 'virtual' ? 'virtual' : 'in-person',
           location: a.mode === 'virtual' ? 'Video Visit' : 'Clinic',
-          notes: a.reason,
+          notes: a.notes ?? a.reason,
+          scheduledAt: new Date(a.time).toISOString(),
         }))
         setAppointments(mapped)
       } catch {
@@ -135,10 +152,11 @@ export default function AppointmentsPage() {
       specialty: doc?.specialty || '',
       date: new Date(res.appointment.time).toISOString().slice(0,10),
       time: new Date(res.appointment.time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
-      status: res.appointment.status === 'pending' ? 'upcoming' : 'upcoming',
+      status: 'pending',
       mode: res.appointment.mode === 'virtual' ? 'virtual' : 'in-person',
       location: res.appointment.mode === 'virtual' ? 'Video Visit' : 'Clinic',
-      notes: res.appointment.reason,
+      notes: res.appointment.notes ?? res.appointment.reason,
+      scheduledAt: new Date(res.appointment.time).toISOString(),
     }
     setAppointments((prev) => [newAppt, ...prev])
   }

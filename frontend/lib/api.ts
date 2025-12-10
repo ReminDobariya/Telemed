@@ -1,27 +1,11 @@
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
 
-// Get API URLs from environment variables only
-// Supports multiple URLs (comma-separated) for fallback
-function getApiUrls(): string[] {
-  // Get URLs from env - can be single URL or comma-separated list
-  const envUrls = process.env.NEXT_PUBLIC_API_URLS || process.env.NEXT_PUBLIC_API_URL;
-  
-  if (!envUrls) {
-    throw new Error('NEXT_PUBLIC_API_URLS or NEXT_PUBLIC_API_URL must be set in environment variables');
-  }
-  
-  // Split by comma and trim whitespace
-  const urls = envUrls.split(',').map(url => url.trim()).filter(url => url.length > 0);
-  
-  if (urls.length === 0) {
-    throw new Error('At least one API URL must be provided in NEXT_PUBLIC_API_URLS');
-  }
-  
-  return urls;
-}
+// Base API URL from environment. No fallbacks, no dev tunnels.
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
-const API_URLS = getApiUrls();
-const PRIMARY_URL = API_URLS[0];
+if (!BASE_URL) {
+  throw new Error('NEXT_PUBLIC_API_URL must be set in environment variables');
+}
 
 export function getAuthToken(): string | null {
   try {
@@ -31,8 +15,7 @@ export function getAuthToken(): string | null {
   }
 }
 
-// Try fetching with fallback URLs from environment
-async function fetchWithFallback<T>(path: string, options: { method?: HttpMethod; body?: any; headers?: Record<string, string>; responseType?: 'json' | 'blob' } = {}): Promise<{ response: Response; url: string }> {
+async function apiRequest(path: string, options: { method?: HttpMethod; body?: any; headers?: Record<string, string>; responseType?: 'json' | 'blob' } = {}): Promise<Response> {
   const token = getAuthToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -40,42 +23,24 @@ async function fetchWithFallback<T>(path: string, options: { method?: HttpMethod
   };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  let lastError: Error | null = null;
-  
-  // Try each URL from environment variables
-  for (const url of API_URLS) {
-    try {
-      const res = await fetch(`${url}${path}`, {
-        method: options.method || 'GET',
-        headers,
-        body: options.body ? JSON.stringify(options.body) : undefined,
-      });
-      
-      // If successful, return the response
-      if (res.ok) {
-        return { response: res, url };
-      }
-      
-      // If not ok but not a network error, throw with status
-      if (res.status !== 0) {
-        let message = `HTTP ${res.status}`;
-        try { const data = await res.json(); message = data.error || message; } catch {}
-        throw new Error(message);
-      }
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error));
-      // Continue to next URL
-      continue;
-    }
-  }
-  
-  // If all URLs failed, throw the last error
-  throw lastError || new Error(`All API endpoints failed. Tried: ${API_URLS.join(', ')}`);
+  const res = await fetch(`${BASE_URL}${path}`, {
+    method: options.method || 'GET',
+    headers,
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  });
+
+  return res;
 }
 
 export async function apiFetch<T>(path: string, options: { method?: HttpMethod; body?: any; headers?: Record<string, string>; responseType?: 'json' | 'blob' } = {}): Promise<T> {
-  const { response } = await fetchWithFallback(path, options);
-  
+  const response = await apiRequest(path, options);
+
+  if (!response.ok) {
+    let message = `HTTP ${response.status}`;
+    try { const data = await response.json(); message = data.error || message; } catch {}
+    throw new Error(message);
+  }
+
   if (options.responseType === 'blob') {
     return response.blob() as Promise<T>;
   }

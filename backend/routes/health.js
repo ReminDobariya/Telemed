@@ -158,22 +158,21 @@ router.get('/insights', auth, async (req, res) => {
       Conversation.find({ userId: req.userId }).sort({ updatedAt: -1 }).limit(5).lean(),
     ]);
 
-    // Build context for AI
+    const safeText = (s) => typeof s === 'string' ? s.slice(0, 200) : '';
+    const compactVitals = (health?.vitals || []).slice(-5).map(v => ({ type: v.type, value: v.value, unit: v.unit, timestamp: v.timestamp }));
+    const compactReports = (health?.reports || []).slice(-5).map(r => ({ type: r.type, testType: r.testType, reportName: r.reportName, createdAt: r.createdAt }));
+    const compactMeds = (medications || []).slice(0, 10).map(m => ({ name: m.name, dosage: m.dosage, frequency: m.frequency, status: m.status }));
+    const compactAllergies = (allergies || []).slice(0, 10).map(a => ({ substance: a.substance, reaction: a.reaction, severity: a.severity }));
+    const compactRx = (prescriptions || []).slice(0, 10).map(rx => ({ medication: rx.medication, dosage: rx.dosage }));
+    const compactChats = (conversations || []).slice(0, 5).map(c => ({ title: c.title, lastMessage: c.messages && c.messages.length > 0 ? safeText(c.messages[c.messages.length - 1].content) : '' }));
     const healthContext = {
       profile: profile || {},
-      medications: medications || [],
-      allergies: allergies || [],
-      prescriptions: prescriptions || [],
-      vitals: health?.vitals || [],
-      reports: health?.reports || [],
-      recentChats: (conversations || []).map(c => ({
-        title: c.title,
-        lastMessage: c.messages && c.messages.length > 0 ? c.messages[c.messages.length - 1].content.substring(0, 200) : ''
-      })),
-      recentChatsFull: (conversations || []).map(c => ({
-        title: c.title,
-        messages: (c.messages || []).slice(-10).map(m => ({ role: m.role, content: m.content })).reverse(),
-      })),
+      medications: compactMeds,
+      allergies: compactAllergies,
+      prescriptions: compactRx,
+      vitals: compactVitals,
+      reports: compactReports,
+      recentChats: compactChats,
     };
 
     // Build a signature from counts and latest timestamps to detect changes
@@ -211,7 +210,7 @@ IMPORTANT GUIDELINES:
 - Be encouraging and supportive
 
 User Health Data:
-${JSON.stringify(healthContext, null, 2)}
+${JSON.stringify(healthContext)}
 
 Generate 3-5 insights as a simple bulleted list. Each insight should be one short sentence (max 2 sentences). Make them relevant to the user's actual data. If data is limited, provide general wellness tips.
 
@@ -248,18 +247,51 @@ Format your response as a simple list, one insight per line, starting with "- ".
     res.json({ success: true, insights, signature });
   } catch (error) {
     console.error('Failed to generate health insights:', error);
-    // Return fallback insights on error
-    res.json({
-      success: true,
-      insights: [
-        "Regular monitoring of your health metrics helps you stay informed about your wellness.",
-        "Maintain open communication with your healthcare providers about any concerns.",
-        "Consistent lifestyle habits support your overall health and well-being."
-      ]
-    });
+    
+    // Attempt to construct a more personalized fallback based on latest known data
+    try {
+      const [profile, medications, allergies, prescriptions, health] = await Promise.all([
+        Profile.findOne({ userId: req.userId }).lean(),
+        Medication.find({ userId: req.userId }).lean(),
+        Allergy.find({ userId: req.userId }).lean(),
+        Prescription.find({ userId: req.userId }).lean(),
+        Health.findOne({ userId: req.userId }).lean(),
+      ]);
+      const signature = JSON.stringify({
+        p: profile?.updatedAt || null,
+        pCount: medications?.length || 0,
+        aCount: allergies?.length || 0,
+        rxCount: prescriptions?.length || 0,
+        h: health?.updatedAt || null,
+        vCount: (health?.vitals || []).length,
+        rCount: (health?.reports || []).length,
+      });
+      const insights = [];
+      if ((health?.vitals || []).length > 0) insights.push('Track your recent vitals trend; small changes matter.');
+      if ((medications || []).length > 0) insights.push('Keep a consistent schedule for your current medications.');
+      if ((allergies || []).length > 0) insights.push('Review allergens and avoid known triggers in daily routine.');
+      if ((prescriptions || []).length > 0) insights.push('Store prescriptions safely and follow general usage guidance.');
+      if ((health?.reports || []).length > 0) insights.push('Review your latest reports and note key observations.');
+      if (insights.length < 3) {
+        insights.push(
+          'Regular monitoring of your health metrics helps you stay informed about your wellness.',
+          'Maintain open communication with your healthcare providers about any concerns.',
+          'Consistent lifestyle habits support your overall health and well-being.'
+        );
+      }
+      return res.json({ success: true, insights: insights.slice(0, 5), signature });
+    } catch {
+      // Final fallback without signature if something else fails
+      return res.json({
+        success: true,
+        insights: [
+          'Regular monitoring of your health metrics helps you stay informed about your wellness.',
+          'Maintain open communication with your healthcare providers about any concerns.',
+          'Consistent lifestyle habits support your overall health and well-being.'
+        ]
+      });
+    }
   }
 });
 
 module.exports = router;
-
-

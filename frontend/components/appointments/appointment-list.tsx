@@ -11,8 +11,9 @@ type Appointment = {
   specialty?: string
   location?: string
   mode?: "in-person" | "virtual"
-  status: "upcoming" | "completed" | "cancelled"
+  status: "pending" | "accepted" | "rejected" | "completed" | "cancelled"
   notes?: string
+  scheduledAt: string
 }
 
 export function AppointmentList({

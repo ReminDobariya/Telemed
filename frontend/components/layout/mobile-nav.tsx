@@ -14,7 +14,7 @@ export default function MobileNav() {
         <span className="size-5">📅</span>
         <span className="hidden xs:block">Appointments</span>
       </a>
-      <a href="/doctors" className="flex flex-1 flex-col items-center gap-1 text-xs">
+      <a href="/find-doctors" className="flex flex-1 flex-col items-center gap-1 text-xs">
         <span className="size-5">👨‍⚕️</span>
         <span className="hidden xs:block">Doctors</span>
       </a>

@@ -85,6 +85,14 @@ export default function DoctorAppointmentsPage() {
   }
 
   function handleStartConsultation(appointment: any) {
+    const scheduled = new Date(appointment.time)
+    const now = new Date()
+    const windowStart = new Date(scheduled.getTime() - 10 * 60 * 1000)
+    const sameDay = now.toDateString() === scheduled.toDateString()
+    if (!(sameDay && now >= windowStart) || !(appointment.status === 'accepted' || appointment.status === 'scheduled')) {
+      toast({ title: 'Not yet time', description: `Scheduled for ${scheduled.toLocaleDateString()} at ${scheduled.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` })
+      return
+    }
     setSelectedAppointment(appointment)
     setConsultationOpen(true)
   }
@@ -199,6 +207,29 @@ export default function DoctorAppointmentsPage() {
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Polling to refresh list automatically */}
+      {(() => {
+        // Anonymous self-invoking component to manage polling
+        useEffect(() => {
+          const interval = setInterval(async () => {
+            try {
+              const today = new Date().toISOString().split('T')[0]
+              const params: any = {}
+              if (activeTab === 'today') {
+                params.date = today
+                params.status = 'accepted'
+              } else if (activeTab !== 'all') {
+                params.status = activeTab
+              }
+              const res = await DoctorAppointmentsAPI.list(params)
+              setAppointments(res.appointments || [])
+            } catch {}
+          }, 30000)
+          return () => clearInterval(interval)
+        }, [activeTab])
+        return null
+      })()}
 
       {selectedAppointment && (
         <>

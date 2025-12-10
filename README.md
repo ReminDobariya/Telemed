@@ -20,12 +20,14 @@ See the project’s final report (`final-report.pdf`) for requirements, architec
 5. Dev: `npm run dev` (nodemon) — API on `http://localhost:5000`
 6. Prod: `npm start`
 
-### Frontend
+### Frontend (Patient & Doctor UIs)
 1. `cd frontend`
 2. `cp env.example .env.local`
 3. Edit `.env.local` (`NEXT_PUBLIC_API_URL=http://localhost:5000`)
 4. Install: `pnpm install` or `npm install`
-5. Dev: `pnpm dev` or `npm run dev` — UI on `http://localhost:3000`
+5. Patient dev: `npm run dev:patient` — `http://localhost:3000`
+6. Doctor dev: `npm run dev:doctor` — `http://localhost:3001`
+7. Generic dev: `npm run dev` — defaults to patient UI
 6. Prod: `pnpm build && pnpm start` or `npm run build && npm start`
 
 ## Python Environment (app.py)
@@ -44,4 +46,12 @@ If your local libraries don’t match required versions, create a virtual enviro
 - Configure environment variables for both apps in production.
 - Secure secrets (`JWT_SECRET`, API keys) and database access.
 
+## Recent Changes
+- Patient appointments list reflects real backend statuses (`pending`, `accepted`, `rejected`, `completed`, `cancelled`).
+- “Join Consultation” appears only when accepted and within 10 minutes before scheduled time.
+- Rejected appointments show as rejected; no consultation room available.
+- Doctor appointments auto-refresh every 30 seconds; start consultation is time‑gated.
+- Backend reminder scheduler sends a single notification 10 minutes before accepted/scheduled appointments.
+- New notification type: `appointment_reminder`.
+- Frontend `.gitignore` updated to ignore `.next-doctor/` and `.next-patient/` outputs.
 

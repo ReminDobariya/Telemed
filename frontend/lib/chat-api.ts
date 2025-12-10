@@ -14,55 +14,11 @@ export interface ChatApiError {
 
 export type ChatApiResult = ChatApiResponse | ChatApiError
 
-// Get API URLs from environment variables only
-function getApiUrls(): string[] {
-  // Get URLs from env - can be single URL or comma-separated list
-  const envUrls = process.env.NEXT_PUBLIC_API_URLS || process.env.NEXT_PUBLIC_API_URL;
-  
-  if (!envUrls) {
-    throw new Error('NEXT_PUBLIC_API_URLS or NEXT_PUBLIC_API_URL must be set in environment variables');
-  }
-  
-  // Split by comma and trim whitespace
-  const urls = envUrls.split(',').map(url => url.trim()).filter(url => url.length > 0);
-  
-  if (urls.length === 0) {
-    throw new Error('At least one API URL must be provided in NEXT_PUBLIC_API_URLS');
-  }
-  
-  return urls;
-}
+// Base API URL from environment. No fallbacks, no dev tunnels.
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
-const API_URLS = getApiUrls();
-
-// Try fetching with fallback URLs from environment
-async function fetchWithFallback(url: string, options: RequestInit): Promise<Response> {
-  let lastError: Error | null = null;
-  
-  // Try each URL from environment variables
-  for (const baseUrl of API_URLS) {
-    try {
-      const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
-      const res = await fetch(fullUrl, options);
-      
-      // If successful, return the response
-      if (res.ok) {
-        return res;
-      }
-      
-      // If not ok but not a network error, throw with status
-      if (res.status !== 0) {
-        throw new Error(`HTTP ${res.status}`);
-      }
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error));
-      // Continue to next URL
-      continue;
-    }
-  }
-  
-  // If all URLs failed, throw the last error
-  throw lastError || new Error(`All API endpoints failed. Tried: ${API_URLS.join(', ')}`);
+if (!BASE_URL) {
+  throw new Error('NEXT_PUBLIC_API_URL must be set in environment variables');
 }
 
 /**
@@ -75,7 +31,7 @@ export async function sendChatMessage(
   userId?: string,
 ): Promise<ChatApiResult> {
   try {
-    const response = await fetchWithFallback('/api/chat/message', {
+    const response = await fetch(`${BASE_URL}/api/chat/message`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -89,7 +45,9 @@ export async function sendChatMessage(
     })
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
+      let message = `HTTP ${response.status}`
+      try { const data = await response.json(); message = data.error || message } catch {}
+      throw new Error(message)
     }
 
     const data = await response.json()
@@ -146,13 +104,15 @@ export async function uploadImageForAnalysis(
       formData.append('conversationId', conversationId)
     }
 
-    const response = await fetchWithFallback('/api/chat/upload-image', {
+    const response = await fetch(`${BASE_URL}/api/chat/upload-image`, {
       method: "POST",
       body: formData,
     })
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
+      let message = `HTTP ${response.status}`
+      try { const data = await response.json(); message = data.error || message } catch {}
+      throw new Error(message)
     }
 
     const data = await response.json()
@@ -194,7 +154,7 @@ export async function uploadImageForAnalysis(
  */
 export async function checkApiHealth(): Promise<boolean> {
   try {
-    const response = await fetchWithFallback('/health', {
+    const response = await fetch(`${BASE_URL}/health`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
