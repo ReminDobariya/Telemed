@@ -46,12 +46,3 @@ If your local libraries don’t match required versions, create a virtual enviro
 - Configure environment variables for both apps in production.
 - Secure secrets (`JWT_SECRET`, API keys) and database access.
 
-## Recent Changes
-- Patient appointments list reflects real backend statuses (`pending`, `accepted`, `rejected`, `completed`, `cancelled`).
-- “Join Consultation” appears only when accepted and within 10 minutes before scheduled time.
-- Rejected appointments show as rejected; no consultation room available.
-- Doctor appointments auto-refresh every 30 seconds; start consultation is time‑gated.
-- Backend reminder scheduler sends a single notification 10 minutes before accepted/scheduled appointments.
-- New notification type: `appointment_reminder`.
-- Frontend `.gitignore` updated to ignore `.next-doctor/` and `.next-patient/` outputs.
-
